@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Network Health Monitor</title>
+<style>
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui;
+}
+
+/* Animated background */
+body {
+  height: 100vh;
+  background: radial-gradient(circle at top, #1f2933, #020617);
+  color: #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Moving grid */
+body::before {
+  content: "";
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background-image:
+    linear-gradient(rgba(134,194,50,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(134,194,50,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: moveGrid 40s linear infinite;
+}
+
+@keyframes moveGrid {
+  from { transform: translate(0,0); }
+  to { transform: translate(-60px,-60px); }
+}
+
+/* Floating network text */
+body::after {
+  content: "PING 192.168.1.1 • TCP • UDP • ICMP • LATENCY • 200 OK • 404";
+  position: absolute;
+  top: 15%;
+  left: -100%;
+  font-size: 22px;
+  color: rgba(134,194,50,0.08);
+  white-space: nowrap;
+  animation: floatText 25s linear infinite;
+}
+
+@keyframes floatText {
+  to { transform: translateX(220%); }
+}
+
+/* Card */
+.card {
+  position: relative;
+  background: rgba(15, 23, 42, 0.95);
+  padding: 35px 45px;
+  border-radius: 16px;
+  width: 420px;
+  box-shadow: 0 0 60px rgba(134,194,50,0.25);
+  z-index: 1;
+}
+
+/* Glow pulse */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #86C232, transparent, #86C232);
+  opacity: 0.3;
+  filter: blur(12px);
+  animation: glow 3s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+@keyframes glow {
+  from { opacity: 0.2; }
+  to { opacity: 0.6; }
+}
+
+/* Title */
+.card h1 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #86C232;
+}
+
+/* Inputs */
+label {
+  display:block;
+  margin-top:15px;
+  font-size:15px;
+  color:#cbd5f5;
+}
+
+input, select {
+  width:100%;
+  margin-top:6px;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  outline:none;
+  background:#020617;
+  color:#fff;
+  font-size:15px;
+}
+
+/* Button */
+button {
+  width:100%;
+  margin-top:25px;
+  padding:12px;
+  font-size:16px;
+  font-weight:bold;
+  border:none;
+  border-radius:10px;
+  background:#86C232;
+  color:#020617;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover {
+  background:#a3e635;
+  transform: scale(1.03);
+}
+</style>
+<script>
+  
+function sendData() {
+    const payload = {
+        deviceName: document.getElementById("device").value,
+        latency: parseInt(document.getElementById("latency").value),
+        status: document.getElementById("status").value
+    };
+
+    fetch("https://lazf8pqr18.execute-api.us-east-1.amazonaws.com/dev/networkalert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())   // ✅ THIS WAS MISSING
+    .then(data => {
+        console.log("PARSED RESPONSE:", data);
+
+        // Works for HTTP API & REST API
+        const body = data.body
+            ? (typeof data.body === "string" ? JSON.parse(data.body) : data.body)
+            : data;
+
+        if (body.alertLevel === "CRITICAL") {
+            alert("❌ CRITICAL ALERT!\nTicket ID: " + body.alertId);
+        } 
+        else if (body.alertLevel === "WARNING") {
+            alert("⚠️ WARNING\nTicket ID: " + body.alertId);
+        } 
+        else {
+            alert("✅ NORMAL\nTicket ID: " + body.alertId);
+        }
+    })
+    .catch(err => {
+        console.error("API ERROR:", err);
+        alert("❌ Error calling API");
+    });
+}
+</script>
+
+</head>
+<body>
+<div class="card">
+    <h1>Network Health Monitor</h1>
+    <label>Device Name</label>
+    <input type="text" id="device" placeholder="Router-1">
+    <label>Latency (ms)</label>
+    <input type="number" id="latency" placeholder="180">
+    <label>Status</label>
+    <select id="status">
+        <option value="UP">UP</option>
+        <option value="DOWN">DOWN</option>
+    </select>
+    <button onclick="sendData()">Check Network</button>
+</div>
+</body>
+</html>

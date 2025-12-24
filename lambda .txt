@@ -1,0 +1,47 @@
+import json
+import boto3
+import uuid
+from datetime import datetime
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('NetworkAlerts')  # your table name
+
+def lambda_handler(event, context):
+    # Handle API Gateway body
+    body = json.loads(event['body']) if 'body' in event else event
+
+    device = body['deviceName']
+    latency = int(body['latency'])
+    status = body['status']
+
+    # Alert logic
+    if status == "DOWN":
+        alert = "CRITICAL"
+    elif latency > 200:
+        alert = "WARNING"
+    else:
+        alert = "NORMAL"
+
+    ticket_id = str(uuid.uuid4())
+
+    table.put_item(
+        Item={
+            "alertId": ticket_id,
+            "deviceName": device,
+            "latency": latency,
+            "status": status,
+            "alertLevel": alert,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": json.dumps({
+            "alertLevel": alert,
+            "alertId": ticket_id
+        })
+    }

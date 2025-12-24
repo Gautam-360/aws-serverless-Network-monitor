@@ -1,0 +1,3 @@
+{
+  "body": "{\"deviceName\": \"Router-1\", \"latency\": 180, \"status\": \"UP\"}"
+}
